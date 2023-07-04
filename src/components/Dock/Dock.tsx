@@ -35,7 +35,6 @@ import { splitMeetingAlias } from '@src/utils/misc';
 import { useState, useEffect } from 'react';
 import { useIntl } from 'react-intl';
 import OttersImage from './Otters.jpg';
-
 import styles from './Dock.module.scss';
 export const Dock = () => {
   const [showPopup, setShowPopup] = useState(false);
