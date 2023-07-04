@@ -5,6 +5,7 @@ import MusicModeModal from '@components/MusicModeModal';
 import RecordingModal from '@components/RecordingModal';
 import StopLiveStreamingModal from '@components/StopLiveStreamingModal';
 import ToggleSettingsDrawerButton from '@components/ToggleSettingsDrawerButton';
+import VoxeetSDK from '@voxeet/voxeet-web-sdk';
 import {
   IconButton,
   LiveStreamButton,
@@ -22,7 +23,7 @@ import {
   useLiveStreaming,
   useErrors,
   Text,
-  Button,
+  useMessage,
 } from '@dolbyio/comms-uikit-react';
 import useDrawer from '@hooks/useDrawer';
 import LiveStreamingModal from '@src/components/LiveStreamingModal';
@@ -30,16 +31,14 @@ import { SideDrawerContentTypes } from '@src/context/SideDrawerContext';
 import { env } from '@src/utils/env';
 import getProxyUrl from '@src/utils/getProxyUrl';
 import { splitMeetingAlias } from '@src/utils/misc';
-import React, { useEffect, useState } from 'react';
+//import React, { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useIntl } from 'react-intl';
-import * as expMetrics from '../../utils/expMetrics';
+import OttersImage from './Otters.jpg';
 
 import styles from './Dock.module.scss';
-import ParticipantStatisticsButton from '../ParticipantStatisticsButton/ParticipantStatisticsButton';
-import AwardParticipationPointsButton from '../AwardParticipationPointsButton/AwardParticipationPointsButton';
-import ParticipationPointsModal from '../ParticipationPointsModal/ParticipationPointsModal';
-
 export const Dock = () => {
+  const [showPopup, setShowPopup] = useState(false);
   const { openDrawer } = useDrawer();
   const { conference } = useConference();
   const { participants } = useParticipants();
@@ -49,6 +48,7 @@ export const Dock = () => {
   const { stopLiveStreamingByProxy } = useLiveStreaming();
   const { isMusicModeSupported, isError: musicModeError, removeAudioCaptureError } = useAudioProcessing();
   const { recordingErrors } = useErrors();
+  const {sendMessage} = useMessage();
 
   useEffect(() => {
     if (musicModeError) {
@@ -56,11 +56,11 @@ export const Dock = () => {
       removeAudioCaptureError?.();
     }
   }, [musicModeError]);
-
+  
   if (conference === null) {
     return null;
   }
-
+  
   const isChrome = navigator.userAgent.match(/chrome|chromium|crios/i);
 
   const handleLackOfBrowserPermissions = () => {
@@ -83,7 +83,7 @@ export const Dock = () => {
   const renderDataInput = (isVisible: boolean, close: () => void) => (
     <LiveStreamingModal isOpen={isVisible} closeModal={close} />
   );
-
+  
   const renderStopStreamingModal = (isVisible: boolean, accept: () => void, cancel: () => void) => (
     <StopLiveStreamingModal
       isOpen={isVisible}
@@ -94,11 +94,7 @@ export const Dock = () => {
       }}
     />
   );
-
-  const [isModalVisible, setModalVisible] = useState(false);
-  const handleClose = () => setModalVisible(false);
-  const handleOpen = () => setModalVisible(true);
-
+  
   return (
     <Space testID="Dock" className={styles.dock} p="m">
       <Space id="CopyButton" className={styles.row} style={{ width: 330 }}>
@@ -109,11 +105,42 @@ export const Dock = () => {
           </Text>
         </Space>
       </Space>
+      
       <Space id="Dock" className={styles.row}>
         <LocalToggleAudioButton
           defaultTooltipText={intl.formatMessage({ id: 'mute' })}
           activeTooltipText={intl.formatMessage({ id: 'unmute' })}
         />
+        <Space className={styles.spacer} />      
+        <IconButton
+        
+          id="OpenDrawerButton"
+          testID="OpenDrawerButton"
+          badge={"WhiteBoard"}
+          backgroundColor="transparent"
+          variant = 'rectangular'
+          defaultTooltipText={intl.formatMessage({ id: 'WhiteBoard' })}
+          onClick={() => {
+            setShowPopup(!showPopup);
+          }}
+          >
+          {showPopup && (
+            <div className={styles.popup}>
+              <img src={OttersImage} alt="Otters" />
+            </div>
+          )}
+          </IconButton>
+          <Space className={styles.spacer} />  
+          <IconButton
+            id="OpenDrawerButton"
+            testID="OpenDrawerButton"
+            backgroundColor="purple"
+            badge={"Quiz"}
+            variant = 'circle'
+          >
+        </IconButton>
+
+
         <Space className={styles.spacer} />
         <LocalToggleVideoButton
           defaultTooltipText={intl.formatMessage({ id: 'cameraOff' })}
@@ -127,7 +154,10 @@ export const Dock = () => {
           onStopSharingAction={() => showSuccessNotification(intl.formatMessage({ id: 'screenSharingStopped' }))}
           onLackOfBrowserPermissions={handleLackOfBrowserPermissions}
           onError={() => showErrorNotification(intl.formatMessage({ id: 'screenSharingLimit' }))}
-        />
+        />  
+        
+
+
         {env('VITE_CONFERENCE_RECORDING') === 'true' && (
           <>
             <Space className={styles.spacer} />
@@ -151,14 +181,6 @@ export const Dock = () => {
         )}
         <Space className={styles.spacer} />
         <LeaveConference />
-        <Space className={styles.spacer} />
-        <ParticipantStatisticsButton 
-          onClickFn={handleOpen}
-        />
-        <ParticipationPointsModal 
-          isOpen={isModalVisible}
-          closeModal={handleClose}
-        />
       </Space>
       <Space className={styles.row} style={{ width: 330, justifyContent: 'flex-end' }}>
         {env('VITE_BLUR_OPTION') === 'true' && <BackgroundBlurToggle />}
@@ -188,6 +210,7 @@ export const Dock = () => {
           />
         )}
         {env('VITE_RTMP_STREAMING') === 'true' && (
+          
           <LiveStreamButton
             id="LiveStreamButton"
             stopStreaming={async () => {
@@ -202,6 +225,17 @@ export const Dock = () => {
             onStopLiveStreamingAction={() => showSuccessNotification(intl.formatMessage({ id: 'liveStreamingEnded' }))}
           />
         )}
+        <IconButton
+          id="OpenDrawerButton"
+          testID="OpenDrawerButton"
+          icon="echo"
+          backgroundColor="transparent"
+          defaultTooltipText={intl.formatMessage({ id: 'help' })}
+          onClick={() => {
+            sendMessage({text:"Help!"});
+          }}
+          >
+        </IconButton>
         <IconButton
           id="OpenDrawerButton"
           testID="OpenDrawerButton"
